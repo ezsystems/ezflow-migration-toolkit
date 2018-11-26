@@ -34,7 +34,7 @@ class Block
         $this->id = $this->generateId($block['@id']);
         $this->name = $block['name'];
         $this->type  = $block['type'];
-        $this->view = $block['view'];
+        $this->view = isset($block['view']) && !empty($block['view']) ? $block['view'] : 'default';
         $this->overflow = isset($block['overflow_id']) && !empty($block['overflow_id']) ? $this->generateId($block['overflow_id']) : null;
         $this->attributes = isset($block['custom_attributes']) ? $block['custom_attributes'] : [];
         
