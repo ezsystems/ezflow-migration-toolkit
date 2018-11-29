@@ -129,7 +129,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
                 $landingPage = $page->getLandingPage($configuration);
 
                 if ($landingPage) {
-                    Report::write("Save page as Langin Page");
+                    Report::write("Save page as Landing Page");
                     $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
                 }
                 else {
@@ -193,6 +193,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
             $message = "ERROR: {$e->getMessage()}";
 
             Report::write($message);
+            Report::write($e->getTraceAsString());
 
             $output->writeln($formatter->formatBlock(["  {$message}  "], 'warning'));
         }

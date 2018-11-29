@@ -33,7 +33,10 @@ class BlockMapper
             $items = [];
 
             foreach ($block->getItems() as $item) {
-                $items[] = new Item($item['object_id'], \DateTime::createFromFormat('U', $item['ts_visible']), null, null);
+                // Items with ts_visible = 0 needs to be skipped. These had been in legacy block queue.
+                if (!empty($item['ts_visible'])) {
+                    $items[] = new Item($item['object_id'], \DateTime::createFromFormat('U', $item['ts_visible'])->getTimestamp(), null, null);
+                }
             }
             
             $attributes = [

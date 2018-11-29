@@ -51,6 +51,11 @@ class Page
         $this->layout = $page->zone_layout;
 
         if (is_array($page->zone)) {
+            // If @id key exists, then it means that there is only one zone,
+            // and the array should be packed into the new array to make it sequential
+            if (array_key_exists('@id', $page->zone)) {
+                $page->zone = [$page->zone];
+            }
             foreach ($page->zone as $legacyZone) {
                 $zone = new Zone($legacyZone, $blockMapper);
 
