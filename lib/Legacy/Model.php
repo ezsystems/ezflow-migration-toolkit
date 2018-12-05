@@ -59,6 +59,10 @@ class Model
                 $this->handler->quoteColumn('data_text', 'ezcontentobject_attribute'),
                 $update->bindValue($xml, null, PDO::PARAM_STR)
             )
+            ->set(
+                $this->handler->quoteColumn('data_type_string', 'ezcontentobject_attribute'),
+                $update->bindValue('ezlandingpage', null, PDO::PARAM_STR)
+            )
             ->where(
                 $update->expr->eq(
                     $this->handler->quoteColumn('id', 'ezcontentobject_attribute'),
