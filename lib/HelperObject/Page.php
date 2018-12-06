@@ -13,6 +13,10 @@ use Symfony\Component\PropertyAccess\Exception\InvalidArgumentException;
 
 class Page
 {
+    const DEFAULT_LAYOUT = 'default';
+    const DEFAULT_ZONE_ID = 'default_id';
+    const DEFAULT_ZONE_NAME = 'default';
+
     private $layout;
 
     private $zones = [];
@@ -25,14 +29,18 @@ class Page
 
     private $name = 'Legacy';
 
+    private $xmlConverter;
+
     public function __construct(
         $ezpage,
         $container,
-        $blockMapper)
-    {
+        $blockMapper
+    ) {
         $this->xml = $ezpage['data_text'];
         $this->blockMapper = $blockMapper;
         $this->container = $container;
+
+        $this->xmlConverter = $this->container->get('ezpublish.fieldtype.ezlandingpage.xml_converter');
 
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder()]);
 
@@ -86,8 +94,16 @@ class Page
 
     public function getLandingPage(&$configuration)
     {
+        // Returns XML of empty ezlandingpage to keep database consistent
+        // since XML of empty ezpage differs from XML of empty ezlandingpage
         if (!count($this->getZones())) {
-            return false;
+            return $this->xmlConverter->toXml(
+                new LandingPage(
+                    $this->getName(),
+                    self::DEFAULT_LAYOUT,
+                    new LandingZone(self::DEFAULT_ZONE_ID, self::DEFAULT_ZONE_NAME)
+                )
+            );
         }
 
         $configuration['layouts'][$this->getLayout()] = [
@@ -179,6 +195,6 @@ class Page
             $zones
         );
 
-        return $this->container->get('ezpublish.fieldtype.ezlandingpage.xml_converter')->toXml($landingPage);
+        return $this->xmlConverter->toXml($landingPage);
     }
 }

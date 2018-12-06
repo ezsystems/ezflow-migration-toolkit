@@ -128,13 +128,8 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
 
                 $landingPage = $page->getLandingPage($configuration);
 
-                if ($landingPage) {
-                    Report::write("Save page as Landing Page");
-                    $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
-                }
-                else {
-                    Report::write("Not valid page field (empty or used as call-to-action). Ignoring...");
-                }
+                Report::write('Save page as Landing Page');
+                $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
             }
 
             $legacyModel->replacePageFieldType();
