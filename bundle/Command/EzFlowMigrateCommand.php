@@ -10,20 +10,34 @@ use EzSystems\EzFlowMigrationToolkit\Report;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
-
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-
-use eZ\Publish\Core\Persistence\Database\DatabaseHandler;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Dumper;
 
 class EzFlowMigrateCommand extends ContainerAwareCommand
 {
-    /** @var DatabaseHandler $handler */
+    /**
+     * @var \eZ\Publish\Core\Persistence\Database\DatabaseHandler $handler
+     */
     private $handler;
+
+    /**
+     * @var \EzSystems\LandingPageFieldTypeBundle\Registry\BlockTypeRegistry
+     */
+    private $blockTypeRegistry;
+
+    /**
+     * @var \EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\XmlConverter
+     */
+    private $xmlConverter;
+
+    /**
+     * @var \Twig_Environment
+     */
+    private $twig;
 
     protected function configure()
     {
@@ -42,6 +56,14 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
         );
     }
 
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->handler = $this->getContainer()->get('ezpublish.api.storage_engine.legacy.dbhandler');
+        $this->blockTypeRegistry = $this->getContainer()->get('ezpublish.landing_page.registry.block_type');
+        $this->xmlConverter = $this->getContainer()->get('ezpublish.fieldtype.ezlandingpage.xml_converter');
+        $this->twig = $this->getContainer()->get('twig');
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $filesystem = new Filesystem();
@@ -54,7 +76,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
 
             $filesystem->mkdir('src/MigrationBundle');
             
-            Report::write("Migrtion log: src/MigrationBundle/migration.log");
+            Report::write('Migration log: src/MigrationBundle/migration.log');
 
             $warning = new OutputFormatterStyle('yellow', 'red', array('bold', 'blink'));
             $output->getFormatter()->setStyle('warning', $warning);
@@ -101,7 +123,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
             $legacyCustomConfiguration = $input->getOption('ini');
 
             Wrapper::initialize($legacyPath, $legacyCustomConfiguration ?: []);
-            Wrapper::$handler = $this->getContainer()->get('ezpublish.api.storage_engine.legacy.dbhandler');
+            Wrapper::$handler = $this->handler;
 
             $legacyWrapper = new Wrapper();
 
@@ -111,7 +133,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
             $legacyPages = $legacyModel->getPages();
 
             Report::write('Reading legacy block configuration');
-            $blockMapper = new BlockMapper($legacyWrapper->getBlockConfiguration(), $this->getContainer()->get('twig'));
+            $blockMapper = new BlockMapper($legacyWrapper->getBlockConfiguration(), $this->twig);
 
             $configuration = [
                 'layouts' => [],
@@ -119,20 +141,29 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
                 'services' => [],
             ];
 
-            foreach ($legacyPages as $legacyPage) {
-                Report::write("Migrating page...");
-                Report::write("ContentId: {$legacyPage['contentobject_id']}, FieldId: {$legacyPage['id']}, Version: {$legacyPage['version']}");
+            $this->handler->beginTransaction();
 
-                $legacyPage['name'] = 'Migrated Landing Page';
-                $page = new Page($legacyPage, $this->getContainer(), $blockMapper);
+            try {
+                foreach ($legacyPages as $legacyPage) {
+                    Report::write('Migrating page...');
+                    Report::write("ContentId: {$legacyPage['contentobject_id']}, FieldId: {$legacyPage['id']}, Version: {$legacyPage['version']}");
 
-                $landingPage = $page->getLandingPage($configuration);
+                    $legacyPage['name'] = 'Migrated Landing Page';
+                    $page = new Page($legacyPage, $this->xmlConverter, $this->blockTypeRegistry, $blockMapper);
 
-                Report::write('Save page as Landing Page');
-                $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
+                    $landingPage = $page->getLandingPage($configuration);
+
+                    Report::write('Save page as Landing Page');
+                    $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
+                }
+
+                $legacyModel->replacePageFieldType();
+            } catch (\Exception $e) {
+                $this->handler->rollBack();
+                throw $e;
             }
 
-            $legacyModel->replacePageFieldType();
+            $this->handler->commit();
 
             $path = 'src/MigrationBundle/Resources/config';
             $filesystem->mkdir($path);
@@ -157,7 +188,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
 
                 $filesystem->dumpFile(
                     "{$path}/{$layout['identifier']}.html.twig",
-                    $this->getContainer()->get('twig')->render('@EzFlowMigrationToolkit/twig/layout.html.twig', [
+                    $this->twig->render('@EzFlowMigrationToolkit/twig/layout.html.twig', [
                         'zones' => $layout['zones']
                     ])
                 );
@@ -170,19 +201,19 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
             Report::write("Save layout configuration: {$path}/layouts.yml");
             $filesystem->dumpFile("{$path}/layouts.yml", $layoutYaml);
 
-            Report::write("Prepare PHP classes for MigrationBundle");
+            Report::write('Prepare PHP classes for MigrationBundle');
             $filesystem->dumpFile(
-                "src/MigrationBundle/MigrationBundle.php",
-                $this->getContainer()->get('twig')->render('@EzFlowMigrationToolkit/php/MigrationBundle.php.twig')
+                'src/MigrationBundle/MigrationBundle.php',
+                $this->twig->render('@EzFlowMigrationToolkit/php/MigrationBundle.php.twig')
             );
             $filesystem->dumpFile(
-                "src/MigrationBundle/DependencyInjection/MigrationExtension.php",
-                $this->getContainer()->get('twig')->render('@EzFlowMigrationToolkit/php/Extension.php.twig')
+                'src/MigrationBundle/DependencyInjection/MigrationExtension.php',
+                $this->twig->render('@EzFlowMigrationToolkit/php/Extension.php.twig')
             );
 
-            Report::write("Done!");
+            Report::write('Done!');
 
-            $output->writeln($formatter->formatBlock(["  Success!  "], 'info'));
+            $output->writeln($formatter->formatBlock(['  Success!  '], 'info'));
         }
         catch (\Exception $e) {
             $message = "ERROR: {$e->getMessage()}";
