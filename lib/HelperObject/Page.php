@@ -21,26 +21,35 @@ class Page
 
     private $zones = [];
 
+    /**
+     * @var string
+     */
     private $xml;
 
     private $blockMapper;
 
-    private $container;
-
     private $name = 'Legacy';
 
+    /**
+     * @var \EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\XmlConverter
+     */
     private $xmlConverter;
+
+    /**
+     * @var \EzSystems\LandingPageFieldTypeBundle\Registry\BlockTypeRegistry
+     */
+    private $blockTypeRegistry;
 
     public function __construct(
         $ezpage,
-        $container,
+        $xmlConverter,
+        $blockTypeRegistry,
         $blockMapper
     ) {
         $this->xml = $ezpage['data_text'];
         $this->blockMapper = $blockMapper;
-        $this->container = $container;
-
-        $this->xmlConverter = $this->container->get('ezpublish.fieldtype.ezlandingpage.xml_converter');
+        $this->xmlConverter = $xmlConverter;
+        $this->blockTypeRegistry = $blockTypeRegistry;
 
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder()]);
 
@@ -101,7 +110,7 @@ class Page
                 new LandingPage(
                     $this->getName(),
                     self::DEFAULT_LAYOUT,
-                    new LandingZone(self::DEFAULT_ZONE_ID, self::DEFAULT_ZONE_NAME)
+                    [new LandingZone(self::DEFAULT_ZONE_ID, self::DEFAULT_ZONE_NAME)]
                 )
             );
         }
@@ -137,8 +146,7 @@ class Page
                     
                     $blockDefinition = $this->blockMapper->generateBlockClass($block->getType());
 
-                    $blockRegistry = $this->container->get('ezpublish.landing_page.registry.block_type');
-                    $blockRegistry->addBlockType('legacy_'.strtolower($block->getType()), $blockDefinition);
+                    $this->blockTypeRegistry->addBlockType('legacy_'.strtolower($block->getType()), $blockDefinition);
 
                     $studioBlock = new BlockValue(
                         $block->getId(),
