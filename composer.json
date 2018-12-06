@@ -10,7 +10,7 @@
   "repositories": [
     { "type": "composer", "url": "https://updates.ez.no/ttl" }
   ],
-  "license": "TTL-2.0",
+  "license": "GPL-2.0-only",
   "autoload": {
     "psr-4": {
       "EzSystems\\EzFlowMigrationToolkit\\": "lib",
