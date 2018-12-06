@@ -86,15 +86,15 @@ class Model
                 $update->bindValue('ezlandingpage', null, PDO::PARAM_STR)
             )
             ->where(
-                $update->expr->eq(
-                    $this->handler->quoteColumn('data_type_string', 'ezcontentclass_attribute'),
-                    $update->bindValue('ezpage', null, PDO::PARAM_STR)
-                )
-            )
-            ->where(
-                $update->expr->eq(
-                    $this->handler->quoteColumn('identifier', 'ezcontentclass_attribute'),
-                    $update->bindValue('page', null, PDO::PARAM_STR)
+                $update->expr->lOr(
+                    $update->expr->eq(
+                        $this->handler->quoteColumn('data_type_string', 'ezcontentclass_attribute'),
+                        $update->bindValue('ezpage', null, PDO::PARAM_STR)
+                    ),
+                    $update->expr->eq(
+                        $this->handler->quoteColumn('identifier', 'ezcontentclass_attribute'),
+                        $update->bindValue('page', null, PDO::PARAM_STR)
+                    )
                 )
             );
 
