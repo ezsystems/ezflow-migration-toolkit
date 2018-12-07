@@ -141,9 +141,8 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
                 'services' => [],
             ];
 
-            $this->handler->beginTransaction();
-
             try {
+                $this->handler->beginTransaction();
                 foreach ($legacyPages as $legacyPage) {
                     Report::write('Migrating page...');
                     Report::write("ContentId: {$legacyPage['contentobject_id']}, FieldId: {$legacyPage['id']}, Version: {$legacyPage['version']}");
@@ -158,12 +157,11 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
                 }
 
                 $legacyModel->replacePageFieldType();
+                $this->handler->commit();
             } catch (\Exception $e) {
                 $this->handler->rollBack();
                 throw $e;
             }
-
-            $this->handler->commit();
 
             $path = 'src/MigrationBundle/Resources/config';
             $filesystem->mkdir($path);
