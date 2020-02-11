@@ -2,10 +2,7 @@
 
 namespace EzSystems\EzFlowMigrationToolkit\Mapper;
 
-use EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\Model\Block\Item;
-use EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\Model\Block\ScheduleBlock\History;
-use EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\Model\Block\ScheduleBlock\Queue;
-use EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\Model\Block\ScheduleBlock\ValidItems;
+use EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\Model\Block\ScheduleBlock\Item\Item;
 use EzSystems\LandingPageFieldTypeBundle\FieldType\LandingPage\Model\BlockValue;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -35,14 +32,38 @@ class BlockMapper
             foreach ($block->getItems() as $item) {
                 // Items with ts_visible = 0 need to be skipped. These had been in legacy block queue.
                 if (!empty($item['ts_visible'])) {
-                    $items[] = new Item($item['object_id'], \DateTime::createFromFormat('U', $item['ts_visible'])->getTimestamp(), null, null);
+                    /*
+
+
+    TODO: Adapt from old Item to new and also code below ($attributes, ..)
+    OLD: public function __construct(
+       $contentId,
+       $date,
+       $overflow = false,
+       $removed = null,
+       $creationDate = null,
+       $movedFrom = null,
+       $movedTo = null
+                     */
+                    /*
+    NEW: public function __construct(
+        $id,
+        ContentInfo $contentInfo,
+        DateTime $additionDate,
+        $originBlockId,
+        $overflowDate,
+        $overflowBlockId
+    ) {
+                     */
+                    $contentInfo = false;// TODO: Load ContentInfo for object_id.
+                    $items[] = new Item($item['object_id'], $contentInfo, \DateTime::createFromFormat('U', $item['ts_visible']), null, null);
                 }
             }
             
             $attributes = [
-                'queue' => new Queue([]),
-                'validItems' => new ValidItems($items),
-                'history' => new History([]),
+                //'queue' => new Queue([]),
+                //'validItems' => new ValidItems($items),
+                //'history' => new History([]),
                 'slots' => $definition['NumberOfValidItems'],
             ];
             
