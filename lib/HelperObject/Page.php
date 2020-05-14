@@ -56,7 +56,7 @@ class Page
         try {
             $page = new PageValue();
             
-            if ($this->xml) {
+            if ($this->xml && $this->xml !== "<?xml version=\"1.0\"?>\n<page/>\n") {
                 $page = $serializer->deserialize($this->xml, 'EzSystems\EzFlowMigrationToolkit\HelperObject\PageValue', 'xml');
             }
         }
