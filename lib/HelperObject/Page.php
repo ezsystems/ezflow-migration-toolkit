@@ -148,11 +148,20 @@ class Page
 
                     $this->blockTypeRegistry->addBlockType('legacy_'.strtolower($block->getType()), $blockDefinition);
 
+                    $blockAttributes = $block->getAttributes();
+                    if (is_string($blockAttributes)) {
+                        if ($blockAttributes === '') {
+                            $blockAttributes = array();
+                            Report::write("Attribute for block {$block->getType()} was empty string. Converted to empty array");
+                        } else {
+                            throw new \Exception("Unknown attribute format for block {$block->getType()}. Attribute value : $blockAttributes");
+                        }
+                    }
                     $studioBlock = new BlockValue(
                         $block->getId(),
                         'legacy_' . strtolower($block->getType()),
                         $block->getView(),
-                        $block->getAttributes()
+                        $blockAttributes
                     );
 
                     Report::write("Generate service configuration for new block type");
