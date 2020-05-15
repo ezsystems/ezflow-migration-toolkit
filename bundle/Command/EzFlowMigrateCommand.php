@@ -54,6 +54,12 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
             InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
             'Custom block configuration to load (ie. --ini=extension/ezdemo/setting/block.ini.append.php)'
         );
+        $this->addOption(
+            'dry-run',
+            null,
+            InputOption::VALUE_NONE,
+            'Skip writing changes to db. Note : src/MigrationBundle is still written to...'
+        );
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -70,6 +76,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
         $formatter = $this->getHelper('formatter');
 
         try {
+            $dryRun = $input->getOption('dry-run');
             Report::prepare($output, $formatter);
             
             $this->loginAsAdmin();
@@ -142,7 +149,9 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
             ];
 
             try {
-                $this->handler->beginTransaction();
+                if (!$dryRun) {
+                    $this->handler->beginTransaction();
+                }
                 foreach ($legacyPages as $legacyPage) {
                     Report::write('Migrating page...');
                     Report::write("ContentId: {$legacyPage['contentobject_id']}, FieldId: {$legacyPage['id']}, Version: {$legacyPage['version']}");
@@ -153,13 +162,19 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
                     $landingPage = $page->getLandingPage($configuration);
 
                     Report::write('Save page as Landing Page');
-                    $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
+                    if (!$dryRun) {
+                        $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
+                    }
                 }
 
-                $legacyModel->replacePageFieldType();
-                $this->handler->commit();
+                if (!$dryRun) {
+                    $legacyModel->replacePageFieldType();
+                    $this->handler->commit();
+                }
             } catch (\Exception $e) {
-                $this->handler->rollBack();
+                if (!$dryRun) {
+                    $this->handler->rollBack();
+                }
                 throw $e;
             }
 
