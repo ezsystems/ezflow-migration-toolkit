@@ -163,7 +163,7 @@ class EzFlowMigrateCommand extends ContainerAwareCommand
 
                     Report::write('Save page as Landing Page');
                     if (!$dryRun) {
-                        $legacyModel->updateEzPage($legacyPage['id'], $landingPage);
+                        $legacyModel->updateEzPage($legacyPage['id'], $legacyPage['version'], $landingPage);
                     }
                 }
 
