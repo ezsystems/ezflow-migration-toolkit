@@ -40,8 +40,7 @@ class Model
                     $this->handler->quoteColumn('data_type_string', 'ezcontentobject_attribute'),
                     $select->bindValue('ezpage', null, PDO::PARAM_STR)
                 )
-            )
-            ->where('data_text IS NOT NULL');
+            );
 
         $query = $select->prepare();
         $query->execute();
@@ -49,7 +48,7 @@ class Model
         return $query->fetchAll();
     }
 
-    public function updateEzPage($id, $xml)
+    public function updateEzPage($id, $version, $xml)
     {
         $update = $this->handler->createUpdateQuery();
 
@@ -64,9 +63,13 @@ class Model
                 $update->bindValue('ezlandingpage', null, PDO::PARAM_STR)
             )
             ->where(
-                $update->expr->eq(
-                    $this->handler->quoteColumn('id', 'ezcontentobject_attribute'),
-                    $update->bindValue($id, null, PDO::PARAM_INT)
+                $update->expr->lAnd(
+                    $update->expr->eq(
+                        $this->handler->quoteColumn('id', 'ezcontentobject_attribute'),
+                        $update->bindValue($id, null, PDO::PARAM_INT)),
+                    $update->expr->eq(
+                        $this->handler->quoteColumn('version', 'ezcontentobject_attribute'),
+                        $update->bindValue($version, null, PDO::PARAM_INT))
                 )
 
             );

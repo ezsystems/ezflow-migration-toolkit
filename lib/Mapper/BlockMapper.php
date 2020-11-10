@@ -81,6 +81,7 @@ class BlockMapper
         }
 
         $className = '\MigrationBundle\LandingPage\Block\Legacy' . $type . 'Block';
+        require_once $filePath;
 
         return new $className;
     }

@@ -56,7 +56,7 @@ class Page
         try {
             $page = new PageValue();
             
-            if ($this->xml) {
+            if ($this->xml && $this->xml !== "<?xml version=\"1.0\"?>\n<page/>\n") {
                 $page = $serializer->deserialize($this->xml, 'EzSystems\EzFlowMigrationToolkit\HelperObject\PageValue', 'xml');
             }
         }
@@ -148,11 +148,20 @@ class Page
 
                     $this->blockTypeRegistry->addBlockType('legacy_'.strtolower($block->getType()), $blockDefinition);
 
+                    $blockAttributes = $block->getAttributes();
+                    if (is_string($blockAttributes)) {
+                        if ($blockAttributes === '') {
+                            $blockAttributes = array();
+                            Report::write("Attribute for block {$block->getType()} was empty string. Converted to empty array");
+                        } else {
+                            throw new \Exception("Unknown attribute format for block {$block->getType()}. Attribute value : $blockAttributes");
+                        }
+                    }
                     $studioBlock = new BlockValue(
                         $block->getId(),
                         'legacy_' . strtolower($block->getType()),
                         $block->getView(),
-                        $block->getAttributes()
+                        $blockAttributes
                     );
 
                     Report::write("Generate service configuration for new block type");
@@ -170,6 +179,7 @@ class Page
                 }
 
                 $studioBlock->setName($block->getName());
+                $studioBlock->setTtl($block->getTtl());
 
                 if (!isset($configuration['blocks'][$studioBlock->getType()])) {
                     $configuration['blocks'][$studioBlock->getType()] = [

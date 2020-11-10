@@ -24,6 +24,8 @@ class Block
     
     private $overflow;
     
+    private $ttl;
+
     public function __construct($block, $blockMapper)
     {
         $model = new Model(Wrapper::$handler);
@@ -36,6 +38,7 @@ class Block
         $this->type  = $block['type'];
         $this->view = isset($block['view']) && !empty($block['view']) ? $block['view'] : 'default';
         $this->overflow = isset($block['overflow_id']) && !empty($block['overflow_id']) ? $this->generateId($block['overflow_id']) : null;
+        $this->ttl = isset($block['ttl']) && !empty($block['ttl']) ? $block['ttl'] : '0';
         $this->attributes = isset($block['custom_attributes']) ? $block['custom_attributes'] : [];
         
         if (isset($block['overflow_id']) && !empty($block['overflow_id'])) {
@@ -86,6 +89,11 @@ class Block
         return $this->overflow;
     }
     
+    public function getTtl()
+    {
+        return $this->ttl;
+    }
+
     public function hasOverflow()
     {
         return (bool)$this->overflow;
@@ -96,3 +104,4 @@ class Block
         return 'b-' . UUID::v3(Wrapper::getUuidSeed(), $legacyId);
     }
 }
+
