@@ -40,8 +40,7 @@ class Model
                     $this->handler->quoteColumn('data_type_string', 'ezcontentobject_attribute'),
                     $select->bindValue('ezpage', null, PDO::PARAM_STR)
                 )
-            )
-            ->where('data_text IS NOT NULL');
+            );
 
         $query = $select->prepare();
         $query->execute();
